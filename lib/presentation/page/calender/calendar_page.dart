@@ -43,7 +43,7 @@ class CalendarPage extends HookConsumerWidget {
         child: const Icon(Icons.check),
       ),
       body: Column(
-        children: [WeekCalendar(day: day)],
+        children: [WeekCalendar(focusDay: day)],
       ),
     );
   }
@@ -52,14 +52,14 @@ class CalendarPage extends HookConsumerWidget {
 class WeekCalendar extends HookConsumerWidget {
   const WeekCalendar({
     super.key,
-    required this.day,
+    required this.focusDay,
   });
 
-  final ValueNotifier<DateTime> day;
+  final ValueNotifier<DateTime> focusDay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var startDay = _getSunday(day.value);
+    var startDay = _getSunday(focusDay.value);
 
     return Padding(
       padding: const EdgeInsets.all(20.0),
@@ -67,79 +67,97 @@ class WeekCalendar extends HookConsumerWidget {
         children: [
           for (var i = 0; i < 7; i++)
             Expanded(
-                child: Padding(
-              padding: const EdgeInsets.only(left: 5, right: 5),
-              child: Container(
-                  decoration: i == 0
-                      ? BoxDecoration(
-                          borderRadius: BorderRadius.circular(30),
-                          color: Colors.white,
-                          boxShadow: const [
-                              BoxShadow(
-                                color: Color.fromARGB(255, 223, 217, 217),
-                                spreadRadius: 2,
-                                blurRadius: 10,
-                                offset:
-                                    Offset(1, 1), // changes position of shadow
-                              ),
-                            ])
-                      : null,
-                  child: DayView(day: startDay.add(Duration(days: i)))),
-            )),
+              child: Padding(
+                  padding: const EdgeInsets.only(left: 5, right: 5),
+                  child: DayView(
+                      day: startDay.add(Duration(days: i)),
+                      focusDay: focusDay)),
+            ),
         ],
       ),
     );
   }
 
   DateTime _getSunday(DateTime date) {
-    return date.subtract(Duration(days: date.weekday));
+    return date.subtract(Duration(days: date.weekday == 7 ? 0 : date.weekday));
   }
+
+  DateTime _getMonday(DateTime date) {
+    return date.subtract(Duration(days: date.weekday == 1 ? 0 : date.weekday - 1));
+  }
+
 }
 
 class DayView extends HookConsumerWidget {
   const DayView({
     super.key,
     required this.day,
+    required this.focusDay,
   });
 
   final DateTime day;
+  final ValueNotifier<DateTime> focusDay;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    return InkWell(
-      customBorder:
-          RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
-      onTap: () => {},
-      child: Column(
-        children: [
-          const SizedBox(
-            height: 5,
+    return Container(
+        decoration: day == focusDay.value
+            ? BoxDecoration(
+                borderRadius: BorderRadius.circular(30),
+                color: Colors.white,
+                boxShadow: const [
+                    BoxShadow(
+                      color: Color.fromARGB(255, 223, 217, 217),
+                      spreadRadius: 2,
+                      blurRadius: 10,
+                      offset: Offset(1, 1), // changes position of shadow
+                    ),
+                  ])
+            : null,
+        child: InkWell(
+          customBorder:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(30)),
+          onTap: () => focusDay.value = day,
+          child: Column(
+            children: [
+              const SizedBox(
+                height: 5,
+              ),
+              Text(DateFormat(DateFormat.ABBR_WEEKDAY).format(day),
+                  style: TextStyle(
+                    color: day.weekday == DateTime.sunday
+                        ? Colors.red
+                        : day.weekday == DateTime.saturday
+                            ? Colors.blue
+                            : Colors.black,
+                  )),
+              const SizedBox(
+                height: 5,
+              ),
+              Text(DateFormat(DateFormat.DAY).format(day),
+                  style: TextStyle(
+                    color: day.weekday == DateTime.sunday
+                        ? Colors.red
+                        : day.weekday == DateTime.saturday
+                            ? Colors.blue
+                            : Colors.black,
+                  )),
+              const SizedBox(
+                height: 5,
+              ),
+              Container(
+                height: 10,
+                width: 10,
+                decoration: const BoxDecoration(
+                  color: Color.fromRGBO(0xd4, 0xfd, 0xa2, 1),
+                  shape: BoxShape.circle,
+                ),
+              ),
+              const SizedBox(
+                height: 5,
+              ),
+            ],
           ),
-          Text(
-            DateFormat(DateFormat.ABBR_WEEKDAY).format(day),
-          ),
-          const SizedBox(
-            height: 5,
-          ),
-          Text(
-            DateFormat(DateFormat.DAY).format(day),
-          ),
-          const SizedBox(
-            height: 5,
-          ),
-          Container(
-            height: 10,
-            width: 10,
-            decoration: const BoxDecoration(
-              color: Color.fromRGBO(0xd4, 0xfd, 0xa2, 1),
-              shape: BoxShape.circle,
-            ),
-          ),
-          const SizedBox(
-            height: 5,
-          ),
-        ],
-      ),
-    );
+        ));
   }
 }
