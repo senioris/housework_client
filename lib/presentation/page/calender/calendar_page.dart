@@ -3,6 +3,8 @@ import 'package:flutter_hooks/flutter_hooks.dart';
 import 'package:hooks_riverpod/hooks_riverpod.dart';
 import 'package:intl/intl.dart';
 
+const MAX_WEEK = 2 * 53;
+
 class CalendarPage extends HookConsumerWidget {
   const CalendarPage({super.key});
 
@@ -50,17 +52,55 @@ class CalendarPage extends HookConsumerWidget {
 }
 
 class WeekCalendar extends HookConsumerWidget {
-  const WeekCalendar({
+  WeekCalendar({
     super.key,
     required this.focusDay,
   });
 
   final ValueNotifier<DateTime> focusDay;
+  final PageController _pageController = PageController(
+    initialPage: MAX_WEEK,
+  );
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    var startDay = _getSunday(focusDay.value);
+    return ConstrainedBox(constraints: const BoxConstraints(maxHeight: 110)
+    , child: PageView.builder(
+        itemCount: MAX_WEEK,
+        scrollDirection: Axis.horizontal,
+        controller: _pageController,
+        itemBuilder: (context, index) {
+          focusDay.value = focusDay.value.subtract(const Duration(days:7));
+          return WeekView(
+            startDay: _getSunday(focusDay.value),
+            focusDay: focusDay,
+          );
+        }),
+    );
+  }
 
+  DateTime _getSunday(DateTime date) {
+    return date.subtract(Duration(days: date.weekday == 7 ? 0 : date.weekday));
+  }
+
+  DateTime _getMonday(DateTime date) {
+    return date
+        .subtract(Duration(days: date.weekday == 1 ? 0 : date.weekday - 1));
+  }
+}
+
+class WeekView extends StatelessWidget {
+  const WeekView({
+    super.key,
+    required this.startDay,
+    required this.focusDay,
+  });
+
+  final DateTime startDay;
+  final ValueNotifier<DateTime> focusDay;
+
+  @override
+  Widget build(BuildContext context) {
     return Padding(
       padding: const EdgeInsets.all(20.0),
       child: Row(
@@ -77,18 +117,9 @@ class WeekCalendar extends HookConsumerWidget {
       ),
     );
   }
-
-  DateTime _getSunday(DateTime date) {
-    return date.subtract(Duration(days: date.weekday == 7 ? 0 : date.weekday));
-  }
-
-  DateTime _getMonday(DateTime date) {
-    return date.subtract(Duration(days: date.weekday == 1 ? 0 : date.weekday - 1));
-  }
-
 }
 
-class DayView extends HookConsumerWidget {
+class DayView extends StatelessWidget {
   const DayView({
     super.key,
     required this.day,
@@ -99,7 +130,7 @@ class DayView extends HookConsumerWidget {
   final ValueNotifier<DateTime> focusDay;
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  Widget build(BuildContext context) {
     return Container(
         decoration: day == focusDay.value
             ? BoxDecoration(
